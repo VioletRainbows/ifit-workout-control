@@ -6,6 +6,7 @@ let globalWorkoutRef = null;
 let globalWorkoutStartTime = 0;
 let globalWorkoutCurrentSpeed = 0;
 let globalWorkoutCurrentIncline = 0;
+let globalWakeLock = null;
 
 function generateBitsForValue(value) {
   result = [0, 1];
@@ -46,8 +47,36 @@ function generatePcm(speed, incline) {
   return samples;
 }
 
+function log(...args) {
+  console.log(Date(), '-', ...args);
+}
+
+async function acquireWakeLock() {
+  try {
+    globalWakeLock = await navigator.wakeLock.request('screen');
+    log('Wake lock acquired');
+    globalWakeLock.addEventListener('release', () => log('Wake lock released'));
+  } catch (err) {
+    log('Wake lock err', err.message);
+  }
+}
+
+async function releaseWakeLock() {
+  if (globalWakeLock != null) {
+    await globalWakeLock.release();
+    globalWakeLock = null;
+    log('Wake lock released')
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && globalWorkoutRef != null) {
+    acquireWakeLock();
+  }
+});
+
 function renderTreadmillControlAudio(speed, incline) {
-  console.log(Date(), '-', 'Setting treadmill speed to', speed, 'and incline to', incline);
+  log('Setting treadmill speed to', speed, 'and incline to', incline);
   var newPcmData = generatePcm(Number(speed), Number(incline));
 
   const buffer = new AudioBuffer({
@@ -326,6 +355,7 @@ function startWorkout() {
   globalWorkoutStartTime = Date.now();
   globalWorkoutCurrentSpeed = 0;
   globalWorkoutCurrentIncline = 0;
+  acquireWakeLock();
   processCurrentWorkout();
   globalWorkoutRef = setInterval(() => processCurrentWorkout(), 5000);
   globalChartObject.update('none');
@@ -336,6 +366,7 @@ function stopWorkout() {
     clearInterval(globalWorkoutRef);
     globalWorkoutRef = null;
   }
+  releaseWakeLock();
   globalChartObject.update('none');
   // Send stop command
   renderTreadmillControlAudio(25.2, 25.2);
