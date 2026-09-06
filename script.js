@@ -177,11 +177,11 @@ function generateHIITWorkout() {
     time += duration;
   };
 
-  // Warm-up: 3 minutes of walking at a quick pace
+  // Warm-up: 4 minutes of walking at a quick pace
   pushPhase(0.5, 2.0, 1.0);
   pushPhase(0.5, 2.5, 1.0);
   pushPhase(1.0, 3.0, 1.0);
-  pushPhase(1.0, 3.5, 1.0);
+  pushPhase(2.0, 3.5, 1.0);
 
   for (let i = 0; i < sets; i++) {
     pushPhase(runTime, workSpeed, workIncline); // Work
