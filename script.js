@@ -178,22 +178,22 @@ function generateHIITWorkout() {
   };
 
   // Warm-up: 3 minutes of walking at a quick pace
-  pushPhase(0.5, 2.0, 0);
-  pushPhase(0.5, 2.5, 0);
-  pushPhase(1.0, 3.0, 0);
-  pushPhase(1.0, 3.5, 0);
+  pushPhase(0.5, 2.0, 1.0);
+  pushPhase(0.5, 2.5, 1.0);
+  pushPhase(1.0, 3.0, 1.0);
+  pushPhase(1.0, 3.5, 1.0);
 
   for (let i = 0; i < sets; i++) {
     pushPhase(runTime, workSpeed, workIncline); // Work
-    pushPhase(walkTime, 3.0, 0); // Rest
+    pushPhase(walkTime, 3.0, 1.0); // Rest
   }
 
   // Cool down: 2 minutes of gradually lower speed
   // We already cooled down for a `walkTime` before getting here,
   // making the total cooldown time longer.
-  pushPhase(1.0, 3.0, 0);
-  pushPhase(0.5, 2.5, 0);
-  pushPhase(0.5, 2.0, 0);
+  pushPhase(1.0, 3.0, 1.0);
+  pushPhase(0.5, 2.5, 1.0);
+  pushPhase(0.5, 2.0, 1.0);
 
   // Mark the end of the workout so the last phase holds until this time
   speeds.push({x: time, y: speeds[speeds.length - 1].y});
