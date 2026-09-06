@@ -102,8 +102,44 @@ const hiitWorkoutPresets = {
 };
 let globalWorkoutTitle = 'Workout';
 
-for (const id of ['hiitWorkSpeed', 'hiitWorkIncline', 'hiitSets', 'hiitRunTime', 'hiitWalkTime']) {
-  document.getElementById(id).addEventListener('input', () => generateHIITWorkout());
+const hiitSettingsFieldIds = ['hiitWorkSpeed', 'hiitWorkIncline', 'hiitSets', 'hiitRunTime', 'hiitWalkTime'];
+const hiitSettingsCookieName = 'hiitSettings';
+
+function setCookie(name, value, days) {
+  const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+}
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(?:^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function saveHIITSettings() {
+  const settings = {};
+  for (const id of hiitSettingsFieldIds) {
+    settings[id] = document.getElementById(id).value;
+  }
+  setCookie(hiitSettingsCookieName, JSON.stringify(settings), 365);
+}
+
+function loadHIITSettings() {
+  const raw = getCookie(hiitSettingsCookieName);
+  if (raw == null) {
+    return false;
+  }
+  const settings = JSON.parse(raw);
+  for (const id of hiitSettingsFieldIds) {
+    document.getElementById(id).value = settings[id];
+  }
+  return true;
+}
+
+for (const id of hiitSettingsFieldIds) {
+  document.getElementById(id).addEventListener('input', () => {
+    saveHIITSettings();
+    generateHIITWorkout();
+  });
 }
 
 function selectHIITWorkout(level) {
@@ -115,6 +151,7 @@ function selectHIITWorkout(level) {
   document.getElementById('hiitRunTime').value = preset.runTime;
   document.getElementById('hiitWalkTime').value = preset.walkTime;
   document.getElementById('hiitSettings').hidden = false;
+  saveHIITSettings();
   generateHIITWorkout();
 }
 
@@ -304,4 +341,9 @@ function processCurrentWorkout() {
   }
 }
 
-selectHIITWorkout('intermediate');
+if (loadHIITSettings()) {
+  document.getElementById('hiitSettings').hidden = false;
+  generateHIITWorkout();
+} else {
+  selectHIITWorkout('intermediate');
+}
