@@ -96,13 +96,14 @@ function renderTreadmillControlAudio(speed, incline) {
 }
 
 const hiitWorkoutPresets = {
-  beginner: { title: 'Beginner HIIT', workSpeed: 5.0, workIncline: 4, sets: 7, runTime: 0.5, walkTime: 1.0 },
-  intermediate: { title: 'Intermediate HIIT', workSpeed: 6.0, workIncline: 6, sets: 8, runTime: 1.0, walkTime: 1.0 },
-  advanced: { title: 'Advanced HIIT', workSpeed: 8.0, workIncline: 8, sets: 10, runTime: 1.0, walkTime: 1.0 },
+  beginner: { title: 'Beginner HIIT', workSpeed: 5.0, workIncline: 4, sets: 7, runTime: 30, walkTime: 60 },
+  intermediate: { title: 'Intermediate HIIT', workSpeed: 6.0, workIncline: 6, sets: 8, runTime: 60, walkTime: 60 },
+  advanced: { title: 'Advanced HIIT', workSpeed: 8.0, workIncline: 8, sets: 10, runTime: 60, walkTime: 60 },
 };
 let globalWorkoutTitle = 'Workout';
 
 const hiitSettingsFieldIds = ['hiitWorkSpeed', 'hiitWorkIncline', 'hiitSets', 'hiitRunTime', 'hiitWalkTime'];
+const hiitSnapToFiveFieldIds = ['hiitRunTime', 'hiitWalkTime'];
 const hiitSettingsCookieName = 'hiitSettings';
 
 function setCookie(name, value, days) {
@@ -136,7 +137,10 @@ function loadHIITSettings() {
 }
 
 for (const id of hiitSettingsFieldIds) {
-  document.getElementById(id).addEventListener('input', () => {
+  document.getElementById(id).addEventListener('input', (e) => {
+    if (hiitSnapToFiveFieldIds.includes(id) && e.target.value !== '') {
+      e.target.value = Math.max(5, Math.round(Number(e.target.value) / 5) * 5);
+    }
     saveHIITSettings();
     generateHIITWorkout();
   });
@@ -164,8 +168,8 @@ function generateHIITWorkout() {
   const workSpeed = Number(document.getElementById('hiitWorkSpeed').value);
   const workIncline = Number(document.getElementById('hiitWorkIncline').value);
   const sets = Number(document.getElementById('hiitSets').value);
-  const runTime = Number(document.getElementById('hiitRunTime').value);
-  const walkTime = Number(document.getElementById('hiitWalkTime').value);
+  const runTime = Number(document.getElementById('hiitRunTime').value) / 60;
+  const walkTime = Number(document.getElementById('hiitWalkTime').value) / 60;
 
   const speeds = [];
   const inclines = [];
