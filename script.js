@@ -7,6 +7,7 @@ let globalWorkoutStartTime = 0;
 let globalWorkoutCurrentSpeed = 0;
 let globalWorkoutCurrentIncline = 0;
 let globalWakeLock = null;
+let globalMaxTime = 0;
 
 function generateBitsForValue(value) {
   result = [0, 1];
@@ -94,166 +95,80 @@ function renderTreadmillControlAudio(speed, incline) {
   source.start();
 }
 
-// Seedable PRNG from https://stackoverflow.com/a/47593316/4479
-function splitmix32(a) {
-  return function() {
-    a |= 0;
-    a = a + 0x9e3779b9 | 0;
-    var t = a ^ a >>> 16;
-    t = Math.imul(t, 0x21f0aaad);
-    t = t ^ t >>> 15;
-    t = Math.imul(t, 0x735a2d97);
-    return ((t = t ^ t >>> 15) >>> 0) / 4294967296;
-  }
+const hiitWorkoutPresets = {
+  beginner: { title: 'Beginner HIIT', workSpeed: 5.0, workIncline: 4, sets: 7, runTime: 0.5, walkTime: 1.0 },
+  intermediate: { title: 'Intermediate HIIT', workSpeed: 6.0, workIncline: 6, sets: 8, runTime: 1.0, walkTime: 1.0 },
+  advanced: { title: 'Advanced HIIT', workSpeed: 8.0, workIncline: 8, sets: 10, runTime: 1.0, walkTime: 1.0 },
+};
+let globalWorkoutTitle = 'Workout';
+
+for (const id of ['hiitWorkSpeed', 'hiitWorkIncline', 'hiitSets', 'hiitRunTime', 'hiitWalkTime']) {
+  document.getElementById(id).addEventListener('input', () => generateHIITWorkout());
 }
 
-function generateWorkout() {
-  const totalTime = (Number.isNaN(Number.parseFloat(document.getElementById('confWorkoutTime').value)) ? -1 : Number.parseFloat(document.getElementById('confWorkoutTime').value));
-  const maxSpeed = (Number.isNaN(Number.parseFloat(document.getElementById('confWorkoutMaxSpeed').value)) ? -1 : Number.parseFloat(document.getElementById('confWorkoutMaxSpeed').value));
-  const maxIncline = (Number.isNaN(Number.parseFloat(document.getElementById('confWorkoutMaxIncline').value)) ? -1 : Number.parseFloat(document.getElementById('confWorkoutMaxIncline').value));
-  const aggressive = document.getElementById('confWorkoutAggressiveRamp').checked;
-  const hills = document.getElementById('confWorkoutHills').checked;
-  const seed = (Number.isNaN(Number.parseInt(document.getElementById('confWorkoutSeed').value)) ? Math.round(Math.random() * 10000) : Number.parseInt(document.getElementById('confWorkoutSeed').value));
+function selectHIITWorkout(level) {
+  const preset = hiitWorkoutPresets[level];
+  globalWorkoutTitle = preset.title;
+  document.getElementById('hiitWorkSpeed').value = preset.workSpeed;
+  document.getElementById('hiitWorkIncline').value = preset.workIncline;
+  document.getElementById('hiitSets').value = preset.sets;
+  document.getElementById('hiitRunTime').value = preset.runTime;
+  document.getElementById('hiitWalkTime').value = preset.walkTime;
+  document.getElementById('hiitSettings').hidden = false;
+  generateHIITWorkout();
+}
 
+function generateHIITWorkout() {
   if (globalWorkoutRef != null) {
     alert('Please stop the current workout before creating another one.');
     return;
   }
 
-  if (totalTime <= 0 || maxSpeed <= 0 || maxIncline < 0) {
-    alert('ERROR: Time, speed, and incline must all be non-negative numbers.');
-    return;
+  const workSpeed = Number(document.getElementById('hiitWorkSpeed').value);
+  const workIncline = Number(document.getElementById('hiitWorkIncline').value);
+  const sets = Number(document.getElementById('hiitSets').value);
+  const runTime = Number(document.getElementById('hiitRunTime').value);
+  const walkTime = Number(document.getElementById('hiitWalkTime').value);
+
+  const speeds = [];
+  const inclines = [];
+  let time = 0;
+
+  const pushPhase = (duration, speed, incline) => {
+    speeds.push({x: time, y: speed});
+    inclines.push({x: time, y: incline});
+    time += duration;
+  };
+
+  // Warm-up: 3 minutes of walking at a quick pace
+  pushPhase(0.5, 2.0, 0);
+  pushPhase(0.5, 2.5, 0);
+  pushPhase(1.0, 3.0, 0);
+  pushPhase(1.0, 3.5, 0);
+
+  for (let i = 0; i < sets; i++) {
+    pushPhase(runTime, workSpeed, workIncline); // Work
+    pushPhase(walkTime, 3.0, 0); // Rest
   }
 
-  const totalChunks = Math.floor(totalTime / 1.5);
-  const warmupChunks = (totalChunks < 8 ? 2 : 3);
-  const cooldownChunks = (totalChunks < 8 ? 2 : 3);
-  const mainChunks = totalChunks - warmupChunks - cooldownChunks;
+  // Cool down: 2 minutes of gradually lower speed
+  // We already cooled down for a `walkTime` before getting here,
+  // making the total cooldown time longer.
+  pushPhase(1.0, 3.0, 0);
+  pushPhase(1.0, 2.5, 0);
+  pushPhase(0.5, 2.0, 0);
 
-  if (mainChunks < 2) {
-    alert('ERROR: the specified time is too short. Please increase it.');
-    return;
-  }
+  // Mark the end of the workout so the last phase holds until this time
+  speeds.push({x: time, y: speeds[speeds.length - 1].y});
+  inclines.push({x: time, y: inclines[inclines.length - 1].y});
 
-  globalWorkoutSpeeds = [];
-  globalWorkoutInclines = [];
-  const rng = splitmix32(seed);
-  const rng2 = (minInclusive, maxExclusive) => rng() * (maxExclusive - minInclusive) + minInclusive;
-  const rng2Ints = (minInclusive, maxExclusive) => Math.floor(rng2(minInclusive, maxExclusive));
-  const rng2Halves = (minInclusive, maxExclusive) => rng2Ints(minInclusive * 2, maxExclusive * 2) / 2;
-
-  // Generate the warmup
-  const maxWarmupSpeed = Math.min(3, maxSpeed);
-  let currentSpeed = rng2Halves(1, maxWarmupSpeed - (warmupChunks / 2.0) + 0.6);
-  let currentIncline = 1.5;
-  for (let i = 0; i < warmupChunks; i++) {
-    const time = globalWorkoutSpeeds.length * 1.5;
-    globalWorkoutSpeeds.push({x: time, y: currentSpeed});
-    globalWorkoutInclines.push({x: time, y: currentIncline});
-    currentSpeed += 0.5;
-  }
-
-  // Generate the main workout
-  for (let i = 0; i < mainChunks; i++) {
-    const time = globalWorkoutSpeeds.length * 1.5;
-
-    // Determine speed
-    currentSpeed = globalWorkoutSpeeds[globalWorkoutSpeeds.length - 1].y;
-    const chunkMinSpeed = Math.min(currentSpeed, maxSpeed, 3);
-    const chunkMaxSpeed = Math.min(currentSpeed + 2, maxSpeed);
-    const wasTrendUp = (globalWorkoutSpeeds[globalWorkoutSpeeds.length - 2].y < currentSpeed);
-    const wasTrendDown = (globalWorkoutSpeeds[globalWorkoutSpeeds.length - 2].y > currentSpeed);
-    const wasTrendLongNeutral = (globalWorkoutSpeeds.length > 4 && currentSpeed == globalWorkoutSpeeds[globalWorkoutSpeeds.length - 2].y && currentSpeed == globalWorkoutSpeeds[globalWorkoutSpeeds.length - 3].y && currentSpeed == globalWorkoutSpeeds[globalWorkoutSpeeds.length - 4].y);
-    const speedRandomFactor = rng();
-    if (wasTrendUp && currentSpeed < chunkMaxSpeed && speedRandomFactor > 0.7) {
-      // Increase
-      const delta = rng2Halves(0.5, Math.min((chunkMaxSpeed - currentSpeed), (aggressive ? 3 : 1.5)) + 0.1);
-      currentSpeed += delta;
-    } else if (wasTrendDown && currentSpeed > chunkMinSpeed && speedRandomFactor > 0.7) {
-      // Decrease
-      const delta = rng2Halves(0.5, Math.min((currentSpeed - chunkMinSpeed), (aggressive ? 3 : 1.5)) + 0.1);
-      currentSpeed -= delta;
-    } else {
-      // Any direction is fine
-      if ((speedRandomFactor > 0.6 || wasTrendLongNeutral) && currentSpeed < chunkMaxSpeed) {
-        // Increase
-        const delta = rng2Halves(0.5, Math.min((chunkMaxSpeed - currentSpeed), (aggressive ? 3 : 1.5)) + 0.1);
-        currentSpeed += delta;
-      } else if ((speedRandomFactor < 0.4 || wasTrendLongNeutral) && currentSpeed > chunkMinSpeed) {
-        // Decrease
-        const delta = rng2Halves(0.5, Math.min((currentSpeed - chunkMinSpeed), (aggressive ? 3 : 1.5)) + 0.1);
-        currentSpeed -= delta;
-      } else {
-        // Speed remains the same
-      }
-    }
-    // Sanity check
-    if (currentSpeed < chunkMinSpeed) currentSpeed = chunkMinSpeed;
-    if (currentSpeed > chunkMaxSpeed) currentSpeed = chunkMaxSpeed;
-
-    // Determine incline
-    currentIncline = globalWorkoutInclines[globalWorkoutInclines.length - 1].y;
-    const chunkMinIncline = 1.5;
-    const chunkMaxIncline = Math.min(currentIncline + 3, maxIncline, (currentSpeed >= 4.5 ? 3 : 99), (currentSpeed >= 6.5 ? 2 : 99));
-    const wasInclineTrendUp = (globalWorkoutInclines[globalWorkoutInclines.length - 2].y < currentIncline);
-    const wasInclineTrendDown = (globalWorkoutInclines[globalWorkoutInclines.length - 2].y > currentIncline);
-    const inclineRandomFactor = rng();
-    if (currentIncline < chunkMaxIncline && (hills ? inclineRandomFactor > 0.4 : wasInclineTrendUp && inclineRandomFactor > 0.7)) {
-      // Increase
-      const delta = rng2Halves(1, Math.min((chunkMaxIncline - currentIncline), 3) + 0.1);
-      currentIncline += delta;
-    } else if (currentIncline > chunkMinIncline && (hills ? inclineRandomFactor > 0.4 : wasInclineTrendDown && inclineRandomFactor > 0.7)) {
-      // Decrease
-      const delta = rng2Halves(1, Math.min((currentIncline - chunkMinIncline), 3) + 0.1);
-      currentIncline -= delta;
-    } else {
-      // Any direction is fine
-      if (inclineRandomFactor > 0.6 && currentIncline < chunkMaxIncline) {
-        // Increase
-        const delta = rng2Halves(1, Math.min((chunkMaxIncline - currentIncline), 3) + 0.1);
-        currentIncline += delta;
-      } else if (inclineRandomFactor < 0.4 && currentIncline > chunkMinIncline) {
-        // Decrease
-        const delta = rng2Halves(1, Math.min((currentIncline - chunkMinIncline), 3) + 0.1);
-        currentIncline -= delta;
-      } else {
-        // Incline remains the same
-      }
-    }
-    // Sanity check
-    if (currentIncline < chunkMinIncline) currentIncline = chunkMinIncline;
-    if (currentIncline > chunkMaxIncline) currentIncline = chunkMaxIncline;
-
-
-    globalWorkoutSpeeds.push({x: time, y: currentSpeed});
-    globalWorkoutInclines.push({x: time, y: currentIncline});
-  }
-
-  // Generate the cooldown
-  currentSpeed = globalWorkoutSpeeds[globalWorkoutSpeeds.length - 1].y;
-  const maxCooldownSpeed = Math.min(3.5, currentSpeed);
-  currentSpeed = maxCooldownSpeed;
-  currentIncline = 1.5;
-  for (let i = 0; i < cooldownChunks; i++) {
-    const time = globalWorkoutSpeeds.length * 1.5;
-    globalWorkoutSpeeds.push({x: time, y: currentSpeed});
-    globalWorkoutInclines.push({x: time, y: currentIncline});
-    currentSpeed -= rng2Halves(0.5, 1.1);
-    if (currentSpeed < 1) currentSpeed = 1;
-  }
-
-  // Extend cooldown to the end of allotted time
-  currentSpeed = globalWorkoutSpeeds[globalWorkoutSpeeds.length - 1].y;
-  currentIncline = 1.5;
-  if (globalWorkoutSpeeds[globalWorkoutSpeeds.length - 1].x < totalTime) {
-    globalWorkoutSpeeds.push({x: totalTime, y: currentSpeed});
-    globalWorkoutInclines.push({x: totalTime, y: currentIncline});
-  }
-
-  showWorkoutChart(seed);
+  globalWorkoutSpeeds = speeds;
+  globalWorkoutInclines = inclines;
+  globalMaxTime = time;
+  showWorkoutChart(globalWorkoutTitle);
 }
 
-function showWorkoutChart(seed) {
+function showWorkoutChart(title) {
   const chartEl = document.getElementById('workoutChart');
 
   globalChartObject?.destroy();
@@ -284,6 +199,7 @@ function showWorkoutChart(seed) {
         x: {
           beginAtZero: true,
           type: 'linear',
+          max: globalMaxTime,
           title: {
             display: true,
             text: 'Minutes',
@@ -297,7 +213,7 @@ function showWorkoutChart(seed) {
       plugins: {
         title: {
           display: true,
-          text: (seed >= 0 ? 'Workout, seed ' + seed : 'Workout'),
+          text: title || 'Workout',
         },
       },
       animation: {
@@ -329,16 +245,6 @@ function showWorkoutChart(seed) {
       },
     }],
   });
-}
-
-function createInstantWorkout(totalTime, maxSpeed, maxIncline, aggressive, hills) {
-  document.getElementById('confWorkoutTime').value = totalTime;
-  document.getElementById('confWorkoutMaxSpeed').value = maxSpeed;
-  document.getElementById('confWorkoutMaxIncline').value = maxIncline;
-  document.getElementById('confWorkoutAggressiveRamp').checked = aggressive;
-  document.getElementById('confWorkoutHills').checked = hills;
-  document.getElementById('confWorkoutSeed').value = '';
-  generateWorkout();
 }
 
 function startWorkout() {
@@ -398,4 +304,4 @@ function processCurrentWorkout() {
   }
 }
 
-showWorkoutChart(-1);
+selectHIITWorkout('intermediate');

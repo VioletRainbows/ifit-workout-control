@@ -18,83 +18,45 @@
 <body>
   <div class="container">
     <h1 class="text-center mt-2 mb-4">iFit Workout Control</h1>
-    <div class="card mb-5">
-      <h5 class="card-header">Manual Control</h5>
-      <div class="card-body">
-        <div class="container">
-          <div class="row">
-            <div class="col-6">
-              <div class="form-floating mb-3">
-                <input type="number" class="form-control" id="manualControlSpeed" min="0.5" max="25.5" value="1">
-                <label for="manualControlSpeed">Speed</label>        
-              </div>
-              <div class="form-floating">
-                <input type="number" class="form-control" id="manualControlIncline" min="0.5" max="25.5" value="1.5">
-                <label for="manualControlIncline">Incline</label>        
-              </div>
-            </div>
-            <div class="col-6 d-flex align-items-stretch justify-content-evenly">
-              <button class="btn btn-lg btn-primary flex-fill" onclick="renderTreadmillControlAudio(document.getElementById('manualControlSpeed').value, document.getElementById('manualControlIncline').value)">Set</button>
-              <span>&nbsp;&nbsp;&nbsp;</span>
-              <button class="btn btn-lg btn-danger flex-fill" onclick="renderTreadmillControlAudio(25.2, 25.2)">Stop</button>
+    <h2 class="text-center mb-4">HIIT Workouts</h2>
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <h5 class="card-header">HIIT Workouts</h5>
+            <div class="card-body d-flex justify-content-evenly flex-wrap">
+              <button class="btn btn-primary m-2" onclick="selectHIITWorkout('beginner')">Beginner</button>
+              <button class="btn btn-primary m-2" onclick="selectHIITWorkout('intermediate')">Intermediate</button>
+              <button class="btn btn-primary m-2" onclick="selectHIITWorkout('advanced')">Advanced</button>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <h2 class="text-center mb-4">Workout Generator</h2>
-    <div class="container">
-      <div class="row">
-        <div class="col-4">
-          <div class="card">
-            <h5 class="card-header">Instant Workouts</h5>
-            <div class="card-body d-flex justify-content-evenly flex-wrap">
-              <button class="btn btn-primary m-2" onclick="createInstantWorkout(20, 4.5, 2, false, false)">Easy 20m</button>
-              <button class="btn btn-primary m-2" onclick="createInstantWorkout(30, 4.5, 2, false, false)">Easy 30m</button>
-              <button class="btn btn-primary m-2" onclick="createInstantWorkout(45, 4.5, 2, false, false)">Easy 45m</button>
-              <button class="btn btn-primary m-2" onclick="createInstantWorkout(20, 5, 6, true, false)">Med 20m</button>
-              <button class="btn btn-primary m-2" onclick="createInstantWorkout(30, 5, 6, true, false)">Med 30m</button>
-              <button class="btn btn-primary m-2" onclick="createInstantWorkout(45, 5, 6, true, false)">Med 45m</button>
-              <button class="btn btn-primary m-2" onclick="createInstantWorkout(25, 7, 8, true, true)">Hard 25m</button>
-              <button class="btn btn-primary m-2" onclick="createInstantWorkout(35, 7, 8, true, true)">Hard 35m</button>
-            </div>
-          </div>
-        </div>
-        <div class="col-8">
-          <div class="card">
-            <h5 class="card-header">Configurable Workouts</h5>
+      <div class="row mt-4">
+        <div class="col-12">
+          <div class="card" id="hiitSettings" hidden>
+            <h5 class="card-header">Workout Settings</h5>
             <div class="card-body">
               <div class="d-flex flex-wrap justify-content-around">
                 <div class="form-floating m-1">
-                  <input type="number" class="form-control" id="confWorkoutTime" min="10" max="90" value="20">
-                  <label for="confWorkoutTime">Time</label>
+                  <input type="number" class="form-control" id="hiitWorkSpeed" step="0.5" min="0">
+                  <label for="hiitWorkSpeed">Sprint Speed</label>
                 </div>
                 <div class="form-floating m-1">
-                  <input type="number" class="form-control" id="confWorkoutMaxSpeed" min="3" max="10" value="5">
-                  <label for="confWorkoutMaxSpeed">Max Speed</label>
+                  <input type="number" class="form-control" id="hiitWorkIncline" step="0.5" min="0">
+                  <label for="hiitWorkIncline">Sprint Incline</label>
                 </div>
                 <div class="form-floating m-1">
-                  <input type="number" class="form-control" id="confWorkoutMaxIncline" min="1.5" max="10" value="3">
-                  <label for="confWorkoutMaxIncline">Max Incline</label>
+                  <input type="number" class="form-control" id="hiitSets" step="1" min="1">
+                  <label for="hiitSets">Sets</label>
                 </div>
-                <div class="form-check form-check-inline m-3">
-                  <input class="form-check-input" type="checkbox" id="confWorkoutAggressiveRamp">
-                  <label class="form-check-label" for="confWorkoutAggressiveRamp">Aggressive ramping</label>
+                <div class="form-floating m-1">
+                  <input type="number" class="form-control" id="hiitRunTime" step="0.5" min="0.5">
+                  <label for="hiitRunTime">Set Running Time (min)</label>
                 </div>
-                <div class="form-check form-check-inline m-3">
-                  <input class="form-check-input" type="checkbox" id="confWorkoutHills">
-                  <label class="form-check-label" for="confWorkoutHills">Hills</label>
-                </div>
-              </div>
-              <div class="row align-items-center mt-3">
-                <div class="col-12 col-md-6 d-flex justify-content-around">
-                  <div class="form-floating flex-shrink-1">
-                    <input type="text" class="form-control" id="confWorkoutSeed" value="">
-                    <label for="confWorkoutSeed">Seed (leave empty for random)</label>
-                  </div>
-                </div>
-                <div class="col-12 col-md-6 text-center">
-                  <button class="btn btn-primary m-1" onclick="generateWorkout()">Generate</button>
+                <div class="form-floating m-1">
+                  <input type="number" class="form-control" id="hiitWalkTime" step="0.5" min="0.5">
+                  <label for="hiitWalkTime">Set Walking Time (min)</label>
                 </div>
               </div>
             </div>
