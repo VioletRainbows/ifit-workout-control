@@ -192,7 +192,7 @@ function generateHIITWorkout() {
   // We already cooled down for a `walkTime` before getting here,
   // making the total cooldown time longer.
   pushPhase(1.0, 3.0, 0);
-  pushPhase(1.0, 2.5, 0);
+  pushPhase(0.5, 2.5, 0);
   pushPhase(0.5, 2.0, 0);
 
   // Mark the end of the workout so the last phase holds until this time
