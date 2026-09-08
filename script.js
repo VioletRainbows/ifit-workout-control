@@ -168,44 +168,48 @@ function generateHIITWorkout() {
   const workSpeed = Number(document.getElementById('hiitWorkSpeed').value);
   const workIncline = Number(document.getElementById('hiitWorkIncline').value);
   const sets = Number(document.getElementById('hiitSets').value);
-  const runTime = Number(document.getElementById('hiitRunTime').value) / 60;
-  const walkTime = Number(document.getElementById('hiitWalkTime').value) / 60;
+  const runTimeSeconds = Number(document.getElementById('hiitRunTime').value);
+  const walkTimeSeconds = Number(document.getElementById('hiitWalkTime').value);
 
   const speeds = [];
   const inclines = [];
-  let time = 0;
+  // Accumulate in whole seconds so repeated additions stay exact; only
+  // convert to minutes (a single division) when producing a chart point.
+  let timeSeconds = 0;
 
-  const pushPhase = (duration, speed, incline) => {
-    speeds.push({x: time, y: speed});
-    inclines.push({x: time, y: incline});
-    time += duration;
+  const pushPhase = (durationSeconds, speed, incline) => {
+    const timeMinutes = timeSeconds / 60;
+    speeds.push({x: timeMinutes, y: speed});
+    inclines.push({x: timeMinutes, y: incline});
+    timeSeconds += durationSeconds;
   };
 
   // Warm-up: 4 minutes of walking at a quick pace
-  pushPhase(0.5, 2.0, 1.0);
-  pushPhase(0.5, 2.5, 1.0);
-  pushPhase(1.0, 3.0, 1.0);
-  pushPhase(2.0, 3.5, 1.0);
+  pushPhase(30, 2.0, 1.0);
+  pushPhase(30, 2.5, 1.0);
+  pushPhase(60, 3.0, 1.0);
+  pushPhase(120, 3.5, 1.0);
 
   for (let i = 0; i < sets; i++) {
-    pushPhase(runTime, workSpeed, workIncline); // Work
-    pushPhase(walkTime, 3.0, 1.0); // Rest
+    pushPhase(runTimeSeconds, workSpeed, workIncline); // Work
+    pushPhase(walkTimeSeconds, 3.0, 1.0); // Rest
   }
 
   // Cool down: 2 minutes of gradually lower speed
-  // We already cooled down for a `walkTime` before getting here,
+  // We already cooled down for a `walkTimeSeconds` before getting here,
   // making the total cooldown time longer.
-  pushPhase(1.0, 3.0, 1.0);
-  pushPhase(0.5, 2.5, 1.0);
-  pushPhase(0.5, 2.0, 1.0);
+  pushPhase(60, 3.0, 1.0);
+  pushPhase(30, 2.5, 1.0);
+  pushPhase(30, 2.0, 1.0);
 
   // Mark the end of the workout so the last phase holds until this time
-  speeds.push({x: time, y: speeds[speeds.length - 1].y});
-  inclines.push({x: time, y: inclines[inclines.length - 1].y});
+  const finalTimeMinutes = timeSeconds / 60;
+  speeds.push({x: finalTimeMinutes, y: speeds[speeds.length - 1].y});
+  inclines.push({x: finalTimeMinutes, y: inclines[inclines.length - 1].y});
 
   globalWorkoutSpeeds = speeds;
   globalWorkoutInclines = inclines;
-  globalMaxTime = time;
+  globalMaxTime = finalTimeMinutes;
   globalWorkoutElapsedMinutesAtStop = null;
   showWorkoutChart();
 }
