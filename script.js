@@ -8,6 +8,8 @@ let globalWorkoutCurrentSpeed = 0;
 let globalWorkoutCurrentIncline = 0;
 let globalWakeLock = null;
 let globalMaxTime = 0;
+let globalChartTickRef = null;
+let globalWorkoutElapsedMinutesAtStop = null;
 
 function generateBitsForValue(value) {
   result = [0, 1];
@@ -100,7 +102,6 @@ const hiitWorkoutPresets = {
   intermediate: { title: 'Intermediate HIIT', workSpeed: 6.0, workIncline: 6, sets: 8, runTime: 60, walkTime: 60 },
   advanced: { title: 'Advanced HIIT', workSpeed: 8.0, workIncline: 8, sets: 10, runTime: 60, walkTime: 60 },
 };
-let globalWorkoutTitle = 'Workout';
 
 const hiitSettingsFieldIds = ['hiitWorkSpeed', 'hiitWorkIncline', 'hiitSets', 'hiitRunTime', 'hiitWalkTime'];
 const hiitSnapToFiveFieldIds = ['hiitRunTime', 'hiitWalkTime'];
@@ -148,7 +149,6 @@ for (const id of hiitSettingsFieldIds) {
 
 function selectHIITWorkout(level) {
   const preset = hiitWorkoutPresets[level];
-  globalWorkoutTitle = preset.title;
   document.getElementById('hiitWorkSpeed').value = preset.workSpeed;
   document.getElementById('hiitWorkIncline').value = preset.workIncline;
   document.getElementById('hiitSets').value = preset.sets;
@@ -206,10 +206,34 @@ function generateHIITWorkout() {
   globalWorkoutSpeeds = speeds;
   globalWorkoutInclines = inclines;
   globalMaxTime = time;
-  showWorkoutChart(globalWorkoutTitle);
+  globalWorkoutElapsedMinutesAtStop = null;
+  showWorkoutChart();
 }
 
-function showWorkoutChart(title) {
+function formatWorkoutTime(minutes) {
+  const totalSeconds = Math.round(minutes * 60);
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function getCurrentWorkoutElapsedMinutes() {
+  if (globalWorkoutRef != null) {
+    return (Date.now() - globalWorkoutStartTime) / 1000.0 / 60;
+  }
+  if (globalWorkoutElapsedMinutesAtStop != null) {
+    return globalWorkoutElapsedMinutesAtStop;
+  }
+  return 0;
+}
+
+function updateWorkoutChart() {
+  globalChartObject.options.plugins.title.text =
+    globalWorkoutSpeeds.length > 0 ? formatWorkoutTime(getCurrentWorkoutElapsedMinutes()) : 'Workout';
+  globalChartObject.update('none');
+}
+
+function showWorkoutChart() {
   const chartEl = document.getElementById('workoutChart');
 
   globalChartObject?.destroy();
@@ -254,7 +278,7 @@ function showWorkoutChart(title) {
       plugins: {
         title: {
           display: true,
-          text: title || 'Workout',
+          text: globalWorkoutSpeeds.length > 0 ? formatWorkoutTime(getCurrentWorkoutElapsedMinutes()) : 'Workout',
         },
       },
       animation: {
@@ -300,27 +324,34 @@ function startWorkout() {
   }
 
   globalWorkoutStartTime = Date.now();
+  globalWorkoutElapsedMinutesAtStop = null;
   globalWorkoutCurrentSpeed = 0;
   globalWorkoutCurrentIncline = 0;
   acquireWakeLock();
   processCurrentWorkout();
   globalWorkoutRef = setInterval(() => processCurrentWorkout(), 5000);
-  globalChartObject.update('none');
+  globalChartTickRef = setInterval(() => updateWorkoutChart(), 1000);
+  updateWorkoutChart();
 }
 
 function stopWorkout() {
   if (globalWorkoutRef != null) {
+    globalWorkoutElapsedMinutesAtStop = (Date.now() - globalWorkoutStartTime) / 1000.0 / 60;
     clearInterval(globalWorkoutRef);
     globalWorkoutRef = null;
   }
+  if (globalChartTickRef != null) {
+    clearInterval(globalChartTickRef);
+    globalChartTickRef = null;
+  }
   releaseWakeLock();
-  globalChartObject.update('none');
+  updateWorkoutChart();
   // Send stop command
   renderTreadmillControlAudio(25.2, 25.2);
 }
 
 function processCurrentWorkout() {
-  globalChartObject.update('none');
+  updateWorkoutChart();
   const currentMinuteBy30SecIncrements = Math.floor((Date.now() - globalWorkoutStartTime) / 1000.0 / 60 * 2) / 2;
 
   if (currentMinuteBy30SecIncrements > globalWorkoutSpeeds[globalWorkoutSpeeds.length - 1].x) {
