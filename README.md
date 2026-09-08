@@ -6,6 +6,7 @@ To use, connect a device to the treadmill audio port, and press the ifit.com but
 
 ## Features
 
+- HIIT workout
 - Save settings in cookies
 - Keep device awake
 
