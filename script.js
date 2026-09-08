@@ -1,4 +1,4 @@
-const globalAudioContext = new AudioContext({ sampleRate: 44100 });
+let globalAudioContext = null;
 let globalChartObject = null;
 let globalWorkoutSpeeds = [];
 let globalWorkoutInclines = [];
@@ -95,6 +95,7 @@ function renderTreadmillControlAudio(speed, incline) {
   source.buffer = buffer;
   source.connect(globalAudioContext.destination);
   source.start();
+  return source;
 }
 
 const hiitWorkoutPresets = {
@@ -346,6 +347,7 @@ function startWorkout() {
     return;
   }
 
+  globalAudioContext = new AudioContext({ sampleRate: 44100 });
   globalWorkoutStartTime = Date.now();
   globalWorkoutElapsedMinutesAtStop = null;
   globalWorkoutCurrentSpeed = 0;
@@ -369,8 +371,13 @@ function stopWorkout() {
   }
   releaseWakeLock();
   updateWorkoutChart();
-  // Send stop command
-  renderTreadmillControlAudio(25.2, 25.2);
+  if (globalAudioContext != null) {
+    // Send stop command, then close the audio channel once it's done playing.
+    const audioContextToClose = globalAudioContext;
+    const stopSource = renderTreadmillControlAudio(25.2, 25.2);
+    stopSource.onended = () => audioContextToClose.close();
+    globalAudioContext = null;
+  }
 }
 
 function processCurrentWorkout() {
