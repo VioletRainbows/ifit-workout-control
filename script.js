@@ -51,7 +51,7 @@ function generatePcm(speed, incline) {
 }
 
 function log(...args) {
-  console.log(Date(), '-', ...args);
+  console.log(formatWorkoutTime(getCurrentWorkoutElapsedMinutes()), '-', ...args);
 }
 
 async function acquireWakeLock() {
@@ -329,7 +329,7 @@ function startWorkout() {
   globalWorkoutCurrentIncline = 0;
   acquireWakeLock();
   processCurrentWorkout();
-  globalWorkoutRef = setInterval(() => processCurrentWorkout(), 5000);
+  globalWorkoutRef = setInterval(() => processCurrentWorkout(), 1000);
   globalChartTickRef = setInterval(() => updateWorkoutChart(), 1000);
   updateWorkoutChart();
 }
@@ -352,9 +352,9 @@ function stopWorkout() {
 
 function processCurrentWorkout() {
   updateWorkoutChart();
-  const currentMinuteBy30SecIncrements = Math.floor((Date.now() - globalWorkoutStartTime) / 1000.0 / 60 * 2) / 2;
+  const currentMinute = (Date.now() - globalWorkoutStartTime) / 1000.0 / 60;
 
-  if (currentMinuteBy30SecIncrements > globalWorkoutSpeeds[globalWorkoutSpeeds.length - 1].x) {
+  if (currentMinute > globalWorkoutSpeeds[globalWorkoutSpeeds.length - 1].x) {
     // We're at the end of the workout
     stopWorkout();
     return;
@@ -362,7 +362,7 @@ function processCurrentWorkout() {
 
   let chunkIndex = 0;
   for (let i = 0; i < globalWorkoutSpeeds.length; i++) {
-    if (globalWorkoutSpeeds[i].x > currentMinuteBy30SecIncrements) {
+    if (globalWorkoutSpeeds[i].x > currentMinute) {
       break;
     } // else:
     chunkIndex = i;
