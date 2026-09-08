@@ -137,10 +137,33 @@ function loadHIITSettings() {
 }
 
 for (const id of hiitSettingsFieldIds) {
-  document.getElementById(id).addEventListener('input', () => {
+  const field = document.getElementById(id);
+  field.addEventListener('input', () => {
     saveHIITSettings();
     generateHIITWorkout();
   });
+  field.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') {
+      return;
+    }
+    e.preventDefault();
+    const nextId = hiitSettingsFieldIds[hiitSettingsFieldIds.indexOf(id) + 1];
+    if (nextId) {
+      document.getElementById(nextId).focus();
+    } else {
+      field.blur();
+    }
+  });
+}
+
+function adjustHIITField(id, delta) {
+  const field = document.getElementById(id);
+  const min = field.min === '' ? -Infinity : Number(field.min);
+  const current = field.value === '' ? 0 : Number(field.value);
+  // Round off binary floating-point drift (e.g. repeated +0.1 clicks).
+  const next = Math.round((current + delta) * 100) / 100;
+  field.value = Math.max(min, next);
+  field.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 function selectHIITWorkout(level) {

@@ -37,26 +37,46 @@
           <div class="card" id="hiitSettings" hidden>
             <h5 class="card-header">Workout Settings</h5>
             <div class="card-body">
-              <div class="d-flex flex-wrap justify-content-around">
-                <div class="form-floating m-1">
-                  <input type="number" class="form-control" id="hiitWorkSpeed" step="0.1" min="1">
-                  <label for="hiitWorkSpeed">Sprint Speed</label>
+              <div class="row g-3">
+                <div class="col-12 col-sm-6 col-md-4 col-lg">
+                  <label for="hiitWorkSpeed" class="form-label small mb-1">Sprint Speed</label>
+                  <div class="input-group">
+                    <button class="btn btn-outline-secondary" type="button" onclick="adjustHIITField('hiitWorkSpeed', -0.1)">−0.1</button>
+                    <input type="number" class="form-control text-center" id="hiitWorkSpeed" step="0.1" min="1" enterkeyhint="next">
+                    <button class="btn btn-outline-secondary" type="button" onclick="adjustHIITField('hiitWorkSpeed', 0.1)">+0.1</button>
+                  </div>
                 </div>
-                <div class="form-floating m-1">
-                  <input type="number" class="form-control" id="hiitWorkIncline" step="0.5" min="1">
-                  <label for="hiitWorkIncline">Sprint Incline</label>
+                <div class="col-12 col-sm-6 col-md-4 col-lg">
+                  <label for="hiitWorkIncline" class="form-label small mb-1">Sprint Incline</label>
+                  <div class="input-group">
+                    <button class="btn btn-outline-secondary" type="button" onclick="adjustHIITField('hiitWorkIncline', -0.5)">−0.5</button>
+                    <input type="number" class="form-control text-center" id="hiitWorkIncline" step="0.5" min="1" enterkeyhint="next">
+                    <button class="btn btn-outline-secondary" type="button" onclick="adjustHIITField('hiitWorkIncline', 0.5)">+0.5</button>
+                  </div>
                 </div>
-                <div class="form-floating m-1">
-                  <input type="number" class="form-control" id="hiitSets" step="1" min="1">
-                  <label for="hiitSets">Sets</label>
+                <div class="col-12 col-sm-6 col-md-4 col-lg">
+                  <label for="hiitSets" class="form-label small mb-1">Sets</label>
+                  <div class="input-group">
+                    <button class="btn btn-outline-secondary" type="button" onclick="adjustHIITField('hiitSets', -1)">−1</button>
+                    <input type="number" class="form-control text-center" id="hiitSets" step="1" min="1" enterkeyhint="next">
+                    <button class="btn btn-outline-secondary" type="button" onclick="adjustHIITField('hiitSets', 1)">+1</button>
+                  </div>
                 </div>
-                <div class="form-floating m-1">
-                  <input type="number" class="form-control" id="hiitRunTime" step="5" min="0">
-                  <label for="hiitRunTime">Set Running Time (sec)</label>
+                <div class="col-12 col-sm-6 col-md-4 col-lg">
+                  <label for="hiitRunTime" class="form-label small mb-1">Running Time (sec)</label>
+                  <div class="input-group">
+                    <button class="btn btn-outline-secondary" type="button" onclick="adjustHIITField('hiitRunTime', -5)">−5</button>
+                    <input type="number" class="form-control text-center" id="hiitRunTime" step="5" min="0" enterkeyhint="next">
+                    <button class="btn btn-outline-secondary" type="button" onclick="adjustHIITField('hiitRunTime', 5)">+5</button>
+                  </div>
                 </div>
-                <div class="form-floating m-1">
-                  <input type="number" class="form-control" id="hiitWalkTime" step="5" min="0">
-                  <label for="hiitWalkTime">Set Walking Time (sec)</label>
+                <div class="col-12 col-sm-6 col-md-4 col-lg">
+                  <label for="hiitWalkTime" class="form-label small mb-1">Walking Time (sec)</label>
+                  <div class="input-group">
+                    <button class="btn btn-outline-secondary" type="button" onclick="adjustHIITField('hiitWalkTime', -5)">−5</button>
+                    <input type="number" class="form-control text-center" id="hiitWalkTime" step="5" min="0" enterkeyhint="done">
+                    <button class="btn btn-outline-secondary" type="button" onclick="adjustHIITField('hiitWalkTime', 5)">+5</button>
+                  </div>
                 </div>
               </div>
             </div>
