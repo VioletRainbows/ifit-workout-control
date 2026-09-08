@@ -104,7 +104,6 @@ const hiitWorkoutPresets = {
 };
 
 const hiitSettingsFieldIds = ['hiitWorkSpeed', 'hiitWorkIncline', 'hiitSets', 'hiitRunTime', 'hiitWalkTime'];
-const hiitSnapToFiveFieldIds = ['hiitRunTime', 'hiitWalkTime'];
 const hiitSettingsCookieName = 'hiitSettings';
 
 function setCookie(name, value, days) {
@@ -138,10 +137,7 @@ function loadHIITSettings() {
 }
 
 for (const id of hiitSettingsFieldIds) {
-  document.getElementById(id).addEventListener('input', (e) => {
-    if (hiitSnapToFiveFieldIds.includes(id) && e.target.value !== '') {
-      e.target.value = Math.max(5, Math.round(Number(e.target.value) / 5) * 5);
-    }
+  document.getElementById(id).addEventListener('input', () => {
     saveHIITSettings();
     generateHIITWorkout();
   });
