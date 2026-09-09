@@ -100,7 +100,7 @@ function renderTreadmillControlAudio(speed, incline) {
 
 const hiitWorkoutPresets = {
   beginner: { title: 'Beginner HIIT', workSpeed: 5.0, workIncline: 4, sets: 7, runTime: 30, walkTime: 60 },
-  intermediate: { title: 'Intermediate HIIT', workSpeed: 6.0, workIncline: 6, sets: 8, runTime: 60, walkTime: 60 },
+  intermediate: { title: 'Intermediate HIIT', workSpeed: 6.0, workIncline: 6, sets: 8, runTime: 45, walkTime: 60 },
   advanced: { title: 'Advanced HIIT', workSpeed: 8.0, workIncline: 8, sets: 10, runTime: 60, walkTime: 60 },
 };
 
